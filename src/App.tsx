@@ -163,10 +163,16 @@ export default function App() {
     const dialog = offerDialog.current;
     if (!showSquarePopup || !dialog) return;
     const previousOverflow = document.body.style.overflow;
-    dialog.showModal();
+    const previousFocus = document.activeElement;
+    const closeOnEscape = (event: KeyboardEvent) => {
+      if (event.key === 'Escape') setShowSquarePopup(false);
+    };
+    dialog.querySelector('button')?.focus({ preventScroll: true });
+    document.addEventListener('keydown', closeOnEscape);
     document.body.style.overflow = 'hidden';
     return () => {
-      dialog.close();
+      document.removeEventListener('keydown', closeOnEscape);
+      if (previousFocus instanceof HTMLElement) previousFocus.focus({ preventScroll: true });
       document.body.style.overflow = previousOverflow;
     };
   }, [showSquarePopup]);
@@ -832,10 +838,10 @@ export default function App() {
       {showSquarePopup && (
         <dialog
           ref={offerDialog}
+          open
+          style={{ zIndex: 50, boxShadow: "0 0 0 150vmax #000a" }}
           aria-labelledby="offer-dialog-title"
           className="offer-dialog border-2 border-[#FFDA05] bg-[#122B49] text-white rounded-3xl"
-          onCancel={(event) => { event.preventDefault(); setShowSquarePopup(false); }}
-          onClick={(event) => { if (event.target === event.currentTarget) setShowSquarePopup(false); }}
         >
           <div className="relative flex flex-col items-center gap-3 p-4 sm:p-6 text-center">
             {/* Discrete Close Button (X) */}
