@@ -1,4 +1,4 @@
-import { useState } from 'react';
+import { useEffect, useRef, useState } from 'react';
 import {
   Lock,
   Flame,
@@ -18,6 +18,16 @@ interface FaqItem {
 const CHECKOUT_FICHAS_10 = 'https://ggcheckout.app/checkout/v2/4N5Ie5cMngSx0OgToGlMhB';
 const CHECKOUT_PACOTE_24 = 'https://ggcheckout.app/checkout/v2/uGr9T1HZShxETItmkP1Lch';
 const CHECKOUT_UPSELL_18 = 'https://ggcheckout.app/checkout/v2/VRBN91Ah0F2w0oJ5CK0b7x';
+
+function checkoutWithUtms(checkout: string) {
+  const url = new URL(checkout);
+  for (const [key, value] of new URLSearchParams(window.location.search)) {
+    if (/^utm_[a-z0-9_]+$/i.test(key) && !url.searchParams.has(key)) {
+      url.searchParams.set(key, value);
+    }
+  }
+  return url.toString();
+}
 
 const FAQ_DATA: FaqItem[] = [
   {
@@ -147,20 +157,19 @@ const IDEAL_FOR = [
 export default function App() {
   const [openFaqIndex, setOpenFaqIndex] = useState<number | null>(null);
   const [showSquarePopup, setShowSquarePopup] = useState(false);
+  const offerDialog = useRef<HTMLDialogElement>(null);
 
-  const handleOpenAtlasPopup = (e: React.MouseEvent) => {
-    e.preventDefault();
-    setShowSquarePopup(true);
-  };
-
-  const handleCloseSquarePopup = () => {
-    setShowSquarePopup(false);
-  };
-
-  const handleBuyFichas10 = () => {
-    setShowSquarePopup(false);
-    window.open(CHECKOUT_FICHAS_10, '_blank');
-  };
+  useEffect(() => {
+    const dialog = offerDialog.current;
+    if (!showSquarePopup || !dialog) return;
+    const previousOverflow = document.body.style.overflow;
+    dialog.showModal();
+    document.body.style.overflow = 'hidden';
+    return () => {
+      dialog.close();
+      document.body.style.overflow = previousOverflow;
+    };
+  }, [showSquarePopup]);
 
   const toggleFaq = (index: number) => {
     setOpenFaqIndex(openFaqIndex === index ? null : index);
@@ -170,14 +179,14 @@ export default function App() {
     e.preventDefault();
     const target = document.getElementById('planos');
     if (target) {
-      target.scrollIntoView({ behavior: 'smooth' });
+      target.scrollIntoView({ behavior: window.matchMedia('(prefers-reduced-motion: reduce)').matches ? 'auto' : 'smooth' });
     }
   };
 
   return (
     <div className="min-h-screen bg-[#0A1930] text-white font-sans antialiased">
       {/* Hero Section */}
-      <section className="w-full px-4 pt-12 pb-16 sm:py-20 bg-[#0A1930] text-white border-b border-white/10">
+      <section className="w-full px-4 pt-7 pb-10 sm:py-20 bg-[#0A1930] text-white border-b border-white/10">
         <div className="max-w-4xl mx-auto text-center">
           {/* Security Pill */}
           <div className="inline-flex items-center gap-2 text-xs sm:text-sm font-semibold px-5 py-2 rounded-full mb-6 bg-[#122B49] text-[#E7F5FC] border border-[#FFDA05]/30 shadow-sm">
@@ -199,10 +208,14 @@ export default function App() {
           <div className="my-6 relative flex justify-center">
             <img
               src="/mockups/Mockup_Com_Novas_Capas.webp"
+              srcSet="/mockups/Mockup_Com_Novas_Capas-400.webp 400w, /mockups/Mockup_Com_Novas_Capas-640.webp 640w"
+              sizes="(max-width: 612px) calc(100vw - 32px), 580px"
               alt="Fichas Visuais de Manutenção e Diagnóstico de Teclados e Pianos Digitais"
-              width="900"
-              height="600"
-              className="max-h-[460px] sm:max-h-[500px] w-auto object-contain drop-shadow-2xl select-none"
+              width="2100"
+              height="1370"
+              fetchPriority="high"
+              decoding="async"
+              className="w-full max-w-[580px] h-auto object-contain drop-shadow-2xl select-none"
             />
           </div>
 
@@ -237,7 +250,7 @@ export default function App() {
             <a
               href="#planos"
               onClick={scrollToPlanos}
-              className="inline-block px-8 sm:px-12 py-5 text-lg sm:text-xl font-black uppercase rounded-full bg-[#FFDA05] hover:bg-[#e6c400] text-[#0A1930] shadow-[0_12px_28px_-6px_rgba(255,218,5,0.45)] hover:shadow-[0_16px_32px_-4px_rgba(255,218,5,0.65)] transition-all duration-300 hover:scale-[1.04] active:scale-[0.98]"
+              className="inline-block w-full sm:w-auto px-5 sm:px-12 py-4 sm:py-5 text-base sm:text-xl font-black uppercase rounded-full bg-[#FFDA05] hover:bg-[#e6c400] text-[#0A1930] shadow-[0_12px_28px_-6px_rgba(255,218,5,0.45)] hover:shadow-[0_16px_32px_-4px_rgba(255,218,5,0.65)] transition-all duration-300 hover:scale-[1.04] active:scale-[0.98]"
             >
               QUERO ACESSAR AS FICHAS
             </a>
@@ -255,20 +268,21 @@ export default function App() {
             VEJA O MATERIAL POR DENTRO
           </h2>
 
-          {/* Marquee (Scrolling Left - Pure Images - 1 Fileira - NÃO clicáveis) */}
-          <div className="relative overflow-hidden w-full py-3">
-            <div className="animate-marquee-left flex items-center gap-6">
-              {[...AMOSTRA_IMAGES, ...AMOSTRA_IMAGES].map((item, i) => (
-                <div key={`amostra-${i}`} className="flex-shrink-0 select-none">
-                  <img
-                    src={item.src}
-                    alt={item.alt}
-                    className="h-[360px] sm:h-[460px] w-auto object-contain block rounded-xl drop-shadow-2xl border border-white/10"
-                    loading="lazy"
-                  />
-                </div>
-              ))}
-            </div>
+          <div
+            className="sample-carousel"
+            role="region"
+            aria-label="Amostras das fichas"
+            tabIndex={0}
+          >
+            {AMOSTRA_IMAGES.map((item) => (
+              <img
+                key={item.src}
+                src={item.src}
+                alt={item.alt}
+                loading="lazy"
+                decoding="async"
+              />
+            ))}
           </div>
         </div>
       </section>
@@ -372,7 +386,7 @@ export default function App() {
             <a
               href="#planos"
               onClick={scrollToPlanos}
-              className="inline-block px-10 py-4 text-base sm:text-lg font-black uppercase rounded-full bg-[#FFDA05] hover:bg-[#e6c400] text-[#0A1930] shadow-[0_10px_25px_-5px_rgba(255,218,5,0.45)] transition-all duration-300 hover:scale-[1.04] active:scale-[0.98]"
+              className="inline-block max-w-full px-5 sm:px-10 py-4 text-base sm:text-lg font-black uppercase rounded-full bg-[#FFDA05] hover:bg-[#e6c400] text-[#0A1930] shadow-[0_10px_25px_-5px_rgba(255,218,5,0.45)] transition-all duration-300 hover:scale-[1.04] active:scale-[0.98]"
             >
               QUERO ACESSAR AS FICHAS
             </a>
@@ -438,9 +452,11 @@ export default function App() {
               <img
                 src="/mockups/Mockup_Principal_Transparente.webp"
                 alt="90 Fichas Visuais de Manutenção e Diagnóstico de Teclados e Pianos Digitais"
-                width="700"
-                height="500"
-                className="max-h-[360px] w-auto object-contain drop-shadow-xl select-none"
+                width="1800"
+                height="1230"
+                loading="lazy"
+                decoding="async"
+                className="max-h-[360px] w-auto max-w-full object-contain drop-shadow-xl select-none"
               />
             </div>
 
@@ -499,7 +515,7 @@ export default function App() {
           {/* Grid with 2 Offer Cards */}
           <div className="grid grid-cols-1 lg:grid-cols-2 gap-8 items-stretch">
             {/* CARD 1: PRODUTO PRINCIPAL — R$ 10,00 */}
-            <div className="rounded-3xl p-6 sm:p-9 flex flex-col justify-between relative bg-[#122B49] border-2 border-white/15 shadow-[0_20px_50px_-15px_rgba(0,0,0,0.6)] text-white">
+            <div className="rounded-3xl p-4 sm:p-9 flex flex-col justify-between relative bg-[#122B49] border-2 border-white/15 shadow-[0_20px_50px_-15px_rgba(0,0,0,0.6)] text-white">
               {/* Outer top badge */}
               <span className="absolute -top-4 left-1/2 -translate-x-1/2 text-xs sm:text-sm font-black px-5 py-1.5 rounded-full whitespace-nowrap bg-[#0A1930] border border-[#FFDA05]/50 text-[#FFDA05] uppercase shadow-md flex items-center gap-1">
                 <Zap className="w-3.5 h-3.5 fill-current" />
@@ -525,9 +541,11 @@ export default function App() {
                   <img
                     src="/mockups/Mockup_Principal_Transparente.webp"
                     alt="90 Fichas Visuais em PDF para Teclados e Pianos Digitais"
-                    width="600"
-                    height="450"
-                    className="h-52 sm:h-64 w-auto object-contain select-none"
+                    width="1800"
+                    height="1230"
+                    loading="lazy"
+                    decoding="async"
+                    className="h-52 sm:h-64 w-auto max-w-full object-contain select-none"
                   />
                 </div>
 
@@ -566,7 +584,8 @@ export default function App() {
                 {/* CTA Button -> Abre o Pop-up com oferta com desconto */}
                 <button
                   type="button"
-                  onClick={handleOpenAtlasPopup}
+                  onClick={() => setShowSquarePopup(true)}
+                  aria-haspopup="dialog"
                   className="w-full mt-5 py-4 sm:py-5 px-6 text-center text-base sm:text-lg font-black uppercase rounded-full bg-[#FFDA05] hover:bg-[#e6c400] text-[#0A1930] shadow-[0_12px_28px_-6px_rgba(255,218,5,0.45)] hover:shadow-[0_16px_32px_-4px_rgba(255,218,5,0.65)] transition-all duration-300 hover:scale-[1.03] active:scale-[0.98] tracking-tight block cursor-pointer"
                 >
                   QUERO AS 90 FICHAS
@@ -583,7 +602,7 @@ export default function App() {
             </div>
 
             {/* CARD 2: PACOTE COMPLETO — R$ 24,90 */}
-            <div className="rounded-3xl p-6 sm:p-9 flex flex-col justify-between relative bg-[#122B49] border-2 border-[#FFDA05] shadow-[0_25px_60px_-15px_rgba(255,218,5,0.28)] text-white">
+            <div className="rounded-3xl p-4 sm:p-9 flex flex-col justify-between relative bg-[#122B49] border-2 border-[#FFDA05] shadow-[0_25px_60px_-15px_rgba(255,218,5,0.28)] text-white">
               {/* Outer top badge */}
               <span className="absolute -top-4 left-1/2 -translate-x-1/2 text-xs sm:text-sm font-black px-6 py-1.5 rounded-full whitespace-nowrap bg-[#FFDA05] text-[#0A1930] uppercase shadow-lg flex items-center gap-1.5">
                 <Star className="w-4 h-4 fill-current text-[#0A1930]" />
@@ -607,11 +626,13 @@ export default function App() {
                 {/* Mockup area: Mockup_Com_Novas_Capas (Não clicável) */}
                 <div className="flex justify-center my-4">
                   <img
-                    src="/mockups/Mockup_Com_Novas_Capas.webp"
+                    src="/mockups/Mockup_Com_Novas_Capas-640.webp"
                     alt="Pacote Completo — 90 Fichas Visuais em PDF + 6 Bônus Digitais"
-                    width="600"
-                    height="450"
-                    className="h-56 sm:h-64 w-auto object-contain drop-shadow-xl select-none"
+                    width="2100"
+                    height="1370"
+                    loading="lazy"
+                    decoding="async"
+                    className="h-56 sm:h-64 w-auto max-w-full object-contain drop-shadow-xl select-none"
                   />
                 </div>
 
@@ -664,7 +685,7 @@ export default function App() {
 
                 {/* Direct CTA button to R$ 24,90 checkout */}
                 <a
-                  href={CHECKOUT_PACOTE_24}
+                  href={checkoutWithUtms(CHECKOUT_PACOTE_24)}
                   target="_blank"
                   rel="noopener noreferrer"
                   className="w-full mt-5 py-4 sm:py-5 px-6 text-center text-base sm:text-lg font-black uppercase rounded-full bg-[#FFDA05] hover:bg-[#e6c400] text-[#0A1930] shadow-[0_12px_28px_-6px_rgba(255,218,5,0.5)] hover:shadow-[0_16px_32px_-4px_rgba(255,218,5,0.75)] transition-all duration-300 hover:scale-[1.03] active:scale-[0.98] tracking-tight block"
@@ -759,7 +780,7 @@ export default function App() {
                 <div key={idx} className="py-5 sm:py-6 transition-colors">
                   <button
                     onClick={() => toggleFaq(idx)}
-                    className="w-full flex justify-between items-center text-left gap-4 cursor-pointer group"
+                    className="w-full min-h-11 flex justify-between items-center text-left gap-4 cursor-pointer group"
                     aria-expanded={isOpen}
                   >
                     <span className="text-lg sm:text-xl font-bold text-white group-hover:text-[#FFDA05] transition-colors">
@@ -789,7 +810,7 @@ export default function App() {
             <a
               href="#planos"
               onClick={scrollToPlanos}
-              className="inline-block px-10 py-5 text-lg font-black uppercase rounded-full bg-[#FFDA05] hover:bg-[#e6c400] text-[#0A1930] shadow-[0_12px_28px_-6px_rgba(255,218,5,0.45)] transition-all duration-300 hover:scale-[1.03] active:scale-[0.98]"
+              className="inline-block max-w-full px-5 sm:px-10 py-4 sm:py-5 text-base sm:text-lg font-black uppercase rounded-full bg-[#FFDA05] hover:bg-[#e6c400] text-[#0A1930] shadow-[0_12px_28px_-6px_rgba(255,218,5,0.45)] transition-all duration-300 hover:scale-[1.03] active:scale-[0.98]"
             >
               QUERO ACESSAR AS FICHAS
             </a>
@@ -809,18 +830,19 @@ export default function App() {
 
       {/* POP-UP QUADRADO DESTACADO */}
       {showSquarePopup && (
-        <div
-          className="fixed inset-0 z-50 bg-black/80 backdrop-blur-md flex items-center justify-center p-3 sm:p-4 overflow-y-auto animate-fadeIn"
-          onClick={handleCloseSquarePopup}
+        <dialog
+          ref={offerDialog}
+          aria-labelledby="offer-dialog-title"
+          className="offer-dialog border-2 border-[#FFDA05] bg-[#122B49] text-white rounded-3xl"
+          onCancel={(event) => { event.preventDefault(); setShowSquarePopup(false); }}
+          onClick={(event) => { if (event.target === event.currentTarget) setShowSquarePopup(false); }}
         >
-          <div
-            className="relative w-[92vw] max-w-[430px] aspect-square bg-[#122B49] border-2 border-[#FFDA05] text-white rounded-3xl p-5 sm:p-6 shadow-[0_25px_60px_-10px_rgba(0,0,0,0.8)] flex flex-col justify-between items-center text-center select-none"
-            onClick={(e) => e.stopPropagation()}
-          >
+          <div className="relative flex flex-col items-center gap-3 p-4 sm:p-6 text-center">
             {/* Discrete Close Button (X) */}
             <button
-              onClick={handleCloseSquarePopup}
-              className="absolute top-3 right-3 p-2 rounded-full bg-[#0A1930]/80 hover:bg-[#0A1930] text-[#E7F5FC] hover:text-white transition-colors cursor-pointer z-10"
+              type="button"
+              onClick={() => setShowSquarePopup(false)}
+              className="absolute top-2 right-2 grid h-11 w-11 place-items-center rounded-full bg-[#0A1930]/80 hover:bg-[#0A1930] text-[#E7F5FC] hover:text-white transition-colors cursor-pointer z-10"
               aria-label="Fechar pop-up"
             >
               <X className="w-4 h-4 stroke-[2.5]" />
@@ -833,7 +855,7 @@ export default function App() {
                 <span>OFERTA ESPECIAL</span>
               </span>
 
-              <h3 className="text-base sm:text-lg font-black uppercase tracking-tight text-white mt-2 leading-tight">
+              <h3 id="offer-dialog-title" className="text-base sm:text-lg font-black uppercase tracking-tight text-white mt-2 leading-tight">
                 Leve as 90 fichas + 6 bônus
               </h3>
 
@@ -845,9 +867,12 @@ export default function App() {
             {/* Mockup image */}
             <div className="my-1 flex justify-center items-center">
               <img
-                src="/mockups/Mockup_Com_Novas_Capas.webp"
+                src="/mockups/Mockup_Com_Novas_Capas-400.webp"
                 alt="Pacote Completo — 90 Fichas Visuais em PDF + 6 Bônus Digitais"
-                className="max-h-28 sm:max-h-36 w-auto object-contain drop-shadow-md select-none"
+                width="2100"
+                height="1370"
+                decoding="async"
+                className="max-h-28 sm:max-h-36 w-auto max-w-full object-contain drop-shadow-md select-none"
               />
             </div>
 
@@ -864,7 +889,7 @@ export default function App() {
             {/* Actions */}
             <div className="w-full space-y-2 pb-1">
               <a
-                href={CHECKOUT_UPSELL_18}
+                href={checkoutWithUtms(CHECKOUT_UPSELL_18)}
                 target="_blank"
                 rel="noopener noreferrer"
                 className="w-full py-3 px-4 text-center text-xs sm:text-sm font-black uppercase rounded-full bg-[#FFDA05] hover:bg-[#e6c400] text-[#0A1930] shadow-[0_8px_20px_-4px_rgba(255,218,5,0.45)] transition-all duration-200 hover:scale-[1.02] active:scale-[0.98] block"
@@ -872,16 +897,18 @@ export default function App() {
                 QUERO O PACOTE COMPLETO POR R$ 18,90
               </a>
 
-              <button
-                type="button"
-                onClick={handleBuyFichas10}
-                className="w-full py-1 text-center text-[11px] font-bold text-[#E7F5FC] hover:text-[#FFDA05] transition-colors cursor-pointer underline underline-offset-2"
+              <a
+                href={checkoutWithUtms(CHECKOUT_FICHAS_10)}
+                target="_blank"
+                rel="noopener noreferrer"
+                onClick={() => setShowSquarePopup(false)}
+                className="flex min-h-11 items-center justify-center px-2 text-center text-xs font-bold text-[#E7F5FC] hover:text-[#FFDA05] underline underline-offset-2"
               >
                 PREFIRO SÓ AS 90 FICHAS POR R$ 10,00
-              </button>
+              </a>
             </div>
           </div>
-        </div>
+        </dialog>
       )}
     </div>
   );

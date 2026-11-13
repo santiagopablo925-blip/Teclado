@@ -16,37 +16,43 @@
   }
 }
 
-@keyframes marquee-left {
-  0% {
-    transform: translateX(0);
-  }
-  100% {
-    transform: translateX(-50%);
-  }
+.sample-carousel {
+  display: grid;
+  grid-auto-flow: column;
+  grid-auto-columns: min(78%, 326px);
+  align-items: stretch;
+  gap: clamp(12px, 2vw, 24px);
+  overflow-x: auto;
+  scroll-snap-type: x mandatory;
+  padding: 4px 4px 16px;
+  scrollbar-color: #a8bbd0 #122b49;
 }
 
-@keyframes marquee-right {
-  0% {
-    transform: translateX(-50%);
-  }
-  100% {
-    transform: translateX(0);
-  }
+.sample-carousel img {
+  display: block;
+  width: 100%;
+  aspect-ratio: 600 / 850;
+  object-fit: contain;
+  background: #122b49;
+  border: 1px solid #ffffff26;
+  border-radius: 12px;
+  scroll-snap-align: start;
 }
 
-.animate-marquee-left {
-  display: flex;
-  width: max-content;
-  animation: marquee-left 36s linear infinite;
+.offer-dialog {
+  position: fixed;
+  inset: 0;
+  margin: auto;
+  width: min(430px, calc(100% - 24px));
+  max-height: calc(100dvh - 24px);
+  overflow-y: auto;
+  overscroll-behavior: contain;
 }
 
-.animate-marquee-right {
-  display: flex;
-  width: max-content;
-  animation: marquee-right 36s linear infinite;
+.offer-dialog::backdrop {
+  background: #000c;
 }
 
-.animate-marquee-left:hover,
-.animate-marquee-right:hover {
-  animation-play-state: paused;
+@media (prefers-reduced-motion: reduce) {
+  html { scroll-behavior: auto; }
 }
