@@ -1,0 +1,6 @@
+{
+  "name": "Fichas Visuais de Manutenção e Diagnóstico de Teclados e Pianos Digitais",
+  "description": "90 fichas visuais em PDF com índice clicável por sintoma, fotos e orientações de teste para teclados musicais e pianos digitais.",
+  "requestFramePermissions": [],
+  "majorCapabilities": ["MAJOR_CAPABILITY_SERVER_SIDE_GEMINI_API"]
+}
